@@ -81,6 +81,7 @@ async function createPost({ authorId, title, content, tags = []}) {
 
         return await addTagsToPosts(post.id, tagList);
     } catch (error) {
+        console.log("Error creating posts!")
         throw error;
     }
 }
@@ -89,7 +90,7 @@ async function updatePost(postId, fields = {}) {
     const {tags} = fields;
     delete fields.tags;
 
-    const {setString} = Object.keys(fields).map(
+    const setString = Object.keys(fields).map(
         (key, index) => `"${ key }"=$${ index + 1 }`
     ).join(', ');
 
@@ -107,6 +108,7 @@ async function updatePost(postId, fields = {}) {
         }
 
         const tagList = await createTags(tags);
+        console.log(tagList, "list")
         const tagListIdString = tagList.map(
             tag => `${tag.id}`
         ).join(', ');
@@ -215,19 +217,19 @@ async function getPostsByUser(userId) {
     const insertValues = tagList.map(
         (_, index) => `$${index + 1}`).join('), (');
     const selectValues = tagList.map(
-        (_, index) => `$${index + 1}`).join('), (');
+        (_, index) => `$${index + 1}`).join(', ');
 
     try {
         await client.query(`
         INSERT INTO tags(name)
-        VALUES ($1), ($2), ($3)
+        VALUES (${insertValues})
         ON CONFLICT (name) DO NOTHING;
-    `);
+    `, tagList );
     const { rows } = await client.query(`
         SELECT * FROM tags
         WHERE name
-        IN ($1, $2, $3);
-    `)
+        IN (${selectValues});
+    `, tagList );
         return rows;
     } catch (error) {
         throw error;
@@ -257,7 +259,18 @@ async function getPostsByUser(userId) {
     } catch (error) {
         throw error;
     }
-  } 
+  }
+
+async function getAllTags() {
+    try {
+        const { rows } = await client.query(`
+            SELECT * from tags
+        `)
+        return rows;
+    } catch (error) {
+        throw error;
+    }
+}
 
 module.exports = {
     client,
@@ -274,5 +287,6 @@ module.exports = {
     createPostTag,
     addTagsToPosts,
     getPostById,
-    getPostsByTagName
+    getPostsByTagName,
+    getAllTags
 }

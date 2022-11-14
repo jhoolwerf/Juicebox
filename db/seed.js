@@ -28,23 +28,27 @@ async function createTables() {
                 name varchar(255) NOT NULL,
                 location varchar(255) NOT NULL,
                 active BOOLEAN DEFAULT true
-            );
+            ); `);
+          await client.query(`
             CREATE TABLE posts (
                 id SERIAL PRIMARY KEY,
                 "authorId" INTEGER REFERENCES users(id),
                 title varchar(255) NOT NULL,
                 content TEXT NOT NULL,
                 active BOOLEAN DEFAULT true
-            );
+            ); `);
+          await client.query(`
             CREATE TABLE tags (
                 id SERIAL PRIMARY KEY,
                 name varchar(255) UNIQUE NOT NULL
-            );
+            ); `);
+          await client.query(`
             CREATE TABLE post_tags (
                 "postId" INTEGER REFERENCES posts(id),
-                "tagId" INTEGER REFERENCES tags(id)
-            );
-        `);
+                "tagId" INTEGER REFERENCES tags(id),
+                UNIQUE ("postId", "tagId")
+            ); `);
+          
         console.log("Finished building tables!");
     } catch (error) {
         console.log("Error building tables!");
@@ -56,7 +60,7 @@ async function createInitialUsers() {
     try {
         console.log("Starting to create users...");
 
-        await createUser({ username: 'albert', password: 'bertie99', name: 'Al Bret', location: 'Sidney, Australia' });
+        await createUser({ username: 'albert', password: 'bertie99', name: 'Al Bert', location: 'Sidney, Australia' });
         await createUser({ username: 'sandra', password: '2sandy4me', name: 'Just Sandra', location: 'Ain\t tellin\'' });
         await createUser({ username: 'glamgal', password: 'soglam', name: 'Joshua', location: 'Upper East Side' });
 
@@ -70,6 +74,7 @@ async function createInitialUsers() {
 async function createInitialPosts() {
     try {
         const [albert, sandra, glamgal] = await getAllUsers();
+        console.log(albert)
         console.log("Starting to create posts...");
     await createPost({
       authorId: albert.id,
