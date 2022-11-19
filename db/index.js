@@ -2,6 +2,8 @@ const { Client } = require('pg');
 
 const client = new Client('postgress://localhost:5432/juicebox-dev');
 
+/** USER METHODS */
+
 async function createUser({ username, password, name, location }) {
     try {
         const { rows: [ user ] } = await client.query(`
@@ -68,6 +70,21 @@ async function getUserById(userId) {
       throw error;
     }
   }
+
+  async function getUserByUsername(username) {
+    try {
+        const { rows: [user] } = await client.query(`
+        SELECT *
+        FROM users
+        WHERE username=$1;
+        `, [username]);
+        return user;
+    } catch (error) {
+        throw error;
+    }
+  }
+
+/** POST METHODS */
 
 async function createPost({ authorId, title, content, tags = []}) {
     try {
@@ -147,7 +164,8 @@ async function getAllPosts() {
 async function getPostsByUser(userId) {
     try {
       const { rows: postIds } = await client.query(`
-        SELECT id FROM posts 
+        SELECT id
+        FROM posts 
         WHERE "authorId"=${userId};
       `);
 
@@ -168,7 +186,12 @@ async function getPostsByUser(userId) {
             FROM posts
             WHERE id=$1;
         `, [postId]);
-
+        if (!post) {
+            throw {
+              name: "PostNotFoundError",
+              message: "Could not find a post with that postId"
+            };
+          }
         const { rows: tags } = await client.query(`
             SELECT tags.*
             FROM tags
@@ -209,6 +232,8 @@ async function getPostsByUser(userId) {
       throw error;
     }
   } 
+
+  /** TAG METHODS */
 
   async function createTags(tagList) {
     if (tagList.length === 0) {
@@ -283,6 +308,7 @@ module.exports = {
     getAllPosts,
     getPostsByUser,
     getUserById,
+    getUserByUsername,
     createTags,
     createPostTag,
     addTagsToPosts,
